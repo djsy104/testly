@@ -1,4 +1,20 @@
+# Dependencies
 node_modules/
+
+# Environment variables
 .env
-.DS_Store
+.env.local
+*.local
+
+# Logs
 *.log
+
+# Build output (React will generate dist/)
+dist/
+dist-ssr/
+
+# OS
+.DS_Store
+
+# VS Code
+.vscode/
