@@ -1,20 +1,51 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') }); // Loads environmental variables first so modules can see them as needed
 
+// Core framework and middleware
 const express = require('express');
-const app = express();
 const cors = require('cors');
+const app = express();
+const port = process.env.PORT || 8080;
+
+// Parses incoming JSON and attaches it to req.body for access
+app.use(express.json());
+
+// For front-end hosts
 const corsOptions = {
   origin: ['http://127.0.0.1:5173'],
 };
-
 app.use(cors(corsOptions));
 
-app.get('/api', (req, res) => {
-  res.json({
-    message: 'hello world',
-  });
-});
+// Database connection
+const connectDB = require('./config/database');
 
-app.listen(8080, () => {
-  console.log('Server started listening on port 8080...');
-});
+// Importing Routes
+const authRouter = require('./routes/authRouter');
+const testsRouter = require('./routes/testsRouter');
+
+// Used to ensure routes are only accessed by the correct user
+const authenticateUser = require('./middleware/authentication');
+
+// Mounting Routes
+app.use('/api/auth', authRouter);
+// app.use('/api/tests', authenticateUser, testsRouter);
+
+// Error handling middleware
+const notFoundMiddleware = require('./middleware/notFound');
+const errorHandlerMiddleware = require('./middleware/errorHandler');
+
+app.use(notFoundMiddleware); // For unknown routes
+app.use(errorHandlerMiddleware); // Centralized error handler
+
+const startServer = async () => {
+  try {
+    // Server only starts if DB is ready
+    connectDB();
+    app.listen(port, () => console.log(`Server is listening on port ${port}...`));
+  } catch (error) {
+    console.log(error);
+    process.exit(1);
+  }
+};
+
+startServer();
