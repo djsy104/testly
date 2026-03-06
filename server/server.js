@@ -24,11 +24,11 @@ const authRouter = require('./routes/authRouter');
 const testsRouter = require('./routes/testsRouter');
 
 // Used to ensure routes are only accessed by the correct user
-const authenticatedUser = require('./middleware/authentication');
+const authenticateUser = require('./middleware/authentication');
 
 // Mounting Routes
 app.use('/api/auth', authRouter);
-app.use('/api/tests', authenticatedUser, testsRouter);
+// app.use('/api/tests', authenticateUser, testsRouter);
 
 // Error handling middleware
 const notFoundMiddleware = require('./middleware/notFound');
