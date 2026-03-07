@@ -1,9 +1,31 @@
-// const express = require('express');
-// const router = express.Router();
-// const { register, login, getUser } = require('../controllers/authController');
+const express = require('express');
+const router = express.Router();
+const {
+  getAllTests,
+  getTest,
+  createTest,
+  updateTest,
+  deleteTest,
+} = require('../controllers/testController');
+const validateRequest = require('../middleware/validateRequest');
+const {
+  testIdValidation,
+  createTestValidation,
+  updateTestValidation,
+  listTestsQueryValidation,
+} = require('../validations/testValidation');
 
-// router.get('/dashboard/:id', getUser);
-// router.post('/register', register);
-// router.post('/login', login);
+// Display all tests + Create test
+router
+  .route('/')
+  .get(listTestsQueryValidation, validateRequest, getAllTests)
+  .post(createTestValidation, validateRequest, createTest);
 
-// module.exports = router;
+// Get + Update + Delete test
+router
+  .route('/:id')
+  .get(testIdValidation, validateRequest, getTest)
+  .patch(updateTestValidation, validateRequest, updateTest)
+  .delete(testIdValidation, validateRequest, deleteTest);
+
+module.exports = router;
