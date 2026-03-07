@@ -6,9 +6,27 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 8080;
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
+
+app.set('trust proxy', 1);
+
+app.use(helmet());
 
 // Parses incoming JSON and attaches it to req.body for access
-app.use(express.json());
+app.use(express.json({ limit: '10kb' })); // Limits the size of JSON body to prevent malicious payloads
+
+app.use(mongoSanitize());
+
+// Rate limit only auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth', authLimiter);
 
 // For front-end hosts
 const corsOptions = {
@@ -40,7 +58,7 @@ app.use(errorHandlerMiddleware); // Centralized error handler
 const startServer = async () => {
   try {
     // Server only starts if DB is ready
-    connectDB();
+    await connectDB();
     app.listen(port, () => console.log(`Server is listening on port ${port}...`));
   } catch (error) {
     console.log(error);
