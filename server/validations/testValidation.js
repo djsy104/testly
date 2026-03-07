@@ -3,7 +3,7 @@ const { body, param, query } = require('express-validator');
 // Allowed enum types
 const TEST_TYPES = ['Quiz', 'Exam', 'Midterm', 'Final Exam'];
 const TEST_STATUSES = ['Upcoming', 'In Review', 'Completed'];
-const TEST_SORT_FIELDS = ['type', 'status', 'score', 'isArchived'];
+const TEST_SORT_FIELDS = ['type', 'status', 'score', 'date', 'createdAt', 'isArchived'];
 
 // Validates the test ID to ensure its a valids MongoDB ObjectId
 const testIdValidation = [param('id').isMongoId().withMessage('Invalid test id format').bail()];
@@ -164,11 +164,11 @@ const updateTestValidation = [
 const listTestsQueryValidation = [
   query('search')
     .optional()
-    .trim()
     .isString()
-    .withMessage('Must be a valid string')
+    .withMessage('search must be a string')
     .bail()
-    .isLength({ max: 100 }),
+    .isLength({ max: 100 })
+    .withMessage('search must be at most 100 characters'),
 
   query('status')
     .optional()
@@ -184,24 +184,21 @@ const listTestsQueryValidation = [
 
   query('isArchived')
     .optional()
-    .isBoolean()
-    .withMessage('isArchived must be a boolean')
-    .bail()
-    .toBoolean(),
+    .isIn(['true', 'false'])
+    .withMessage('isArchived must be a boolean string: true or false')
+    .bail(),
 
   query('page')
     .optional()
     .isInt({ min: 1, max: 1000 })
     .withMessage('Page must be an integer >= 1')
-    .bail()
-    .toInt(),
+    .bail(),
 
   query('limit')
     .optional()
     .isInt({ min: 1, max: 100 })
     .withMessage('Limit must be an integer between 1 and 100')
-    .bail()
-    .toInt(),
+    .bail(),
 
   query('sort')
     .optional()
@@ -210,15 +207,12 @@ const listTestsQueryValidation = [
     .bail()
     .custom((value) => {
       const fields = value.split(',');
-
       for (let field of fields) {
         const baseField = field.startsWith('-') ? field.substring(1) : field;
-
         if (!TEST_SORT_FIELDS.includes(baseField)) {
           throw new Error(`Invalid sort field. Allowed fields: ${TEST_SORT_FIELDS.join(', ')}`);
         }
       }
-
       return true;
     }),
 ];

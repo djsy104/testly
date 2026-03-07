@@ -17,21 +17,22 @@ const pickAllowedFields = (source) => {
 const getAllTests = async (req, res, next) => {
   try {
     const filter = { createdBy: req.user.userId };
+    const search = req.query.search?.trim();
 
     // Search filters
-    if (req.query.search) {
+    if (search) {
       // $ -> MongoDB query operator
-      filter.$text = { $search: req.query.search };
+      filter.$text = { $search: search };
     }
 
     // Other filters
     if (req.query.status) filter.status = req.query.status;
     if (req.query.type) filter.type = req.query.type;
-    if (req.query.isArchived !== undefined) filter.isArchived = req.query.isArchived;
+    if (req.query.isArchived !== undefined) filter.isArchived = req.query.isArchived === 'true';
 
     // Applying pagination
-    const page = req.query.page ?? 1;
-    const limit = req.query.limit ?? 10;
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
     // Applying sorting
