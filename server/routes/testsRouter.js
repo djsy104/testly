@@ -7,8 +7,25 @@ const {
   updateTest,
   deleteTest,
 } = require('../controllers/tests');
+const validateRequest = require('../middleware/validateRequest');
+const {
+  testIdValidation,
+  createTestValidation,
+  updateTestValidation,
+  listTestsQueryValidation,
+} = require('../validations/testValidation');
 
-router.route('/').post(createTest).get(getAllTests);
-router.route('/:id').get(getTest).patch(updateTest).delete(deleteTest);
+// Display all tests + Create test
+router
+  .route('/')
+  .get(listTestsQueryValidation, validateRequest, getAllTests)
+  .post(createTestValidation, validateRequest, createTest);
+
+// Get + Update + Delete test
+router
+  .route('/:id')
+  .get(testIdValidation, validateRequest, getTest)
+  .patch(updateTestValidation, validateRequest, updateTest)
+  .delete(testIdValidation, validateRequest, deleteTest);
 
 module.exports = router;

@@ -28,7 +28,7 @@ const authenticateUser = require('./middleware/authentication');
 
 // Mounting Routes
 app.use('/api/auth', authRouter);
-// app.use('/api/tests', authenticateUser, testsRouter);
+app.use('/api/tests', authenticateUser, testsRouter);
 
 // Error handling middleware
 const notFoundMiddleware = require('./middleware/notFound');

@@ -1,5 +1,6 @@
 const { body, param, query } = require('express-validator');
 
+// Allowed enum types
 const TEST_TYPES = ['Quiz', 'Exam', 'Midterm', 'Final'];
 const TEST_STATUSES = ['Upcoming', 'In Review', 'Completed'];
 
@@ -46,7 +47,12 @@ const createTestValidation = [
     .withMessage('Score must be an integer between 0 and 100')
     .bail(),
 
-  body('isArchived').optional().isBoolean().withMessage('isArchived must be a boolean').bail(),
+  body('isArchived')
+    .optional()
+    .isBoolean()
+    .toBoolean()
+    .withMessage('isArchived must be a boolean')
+    .bail(),
 
   // Prevent clients from setting ownership
   body('createdBy')
@@ -54,6 +60,21 @@ const createTestValidation = [
     .custom(() => {
       throw new Error('createdBy cannot be set by the client');
     }),
+
+  // Ensures score MUST be set if status is 'Completed'
+  body().custom((_, { req }) => {
+    const { status, score } = req.body;
+
+    if (status === 'Completed' && score === undefined) {
+      throw new Error('Score required when status is Completed');
+    }
+
+    if (status !== 'Completed' && score !== undefined) {
+      throw new Error('Score only allowed when status is Completed');
+    }
+
+    return true;
+  }),
 ];
 
 // Update test validation rules
@@ -102,13 +123,40 @@ const updateTestValidation = [
     .withMessage('Score must be an integer between 0 and 100')
     .bail(),
 
-  body('isArchived').optional().isBoolean().withMessage('isArchived must be a boolean').bail(),
+  body('isArchived')
+    .optional()
+    .isBoolean()
+    .toBoolean()
+    .withMessage('isArchived must be a boolean')
+    .bail(),
 
+  // Prevent clients from setting ownership
   body('createdBy')
     .optional()
     .custom(() => {
       throw new Error('createdBy cannot be updated by the client');
     }),
+
+  // Ensures score MUST be set if status is 'Completed'
+  body().custom((_, { req }) => {
+    const hasStatus = req.body.status !== undefined;
+    const hasScore = req.body.score !== undefined;
+
+    // If neither field is being updated, skip
+    if (!hasStatus && !hasScore) return true;
+
+    const { status, score } = req.body;
+
+    if (status === 'Completed' && score === undefined) {
+      throw new Error('Score required when status is Completed');
+    }
+
+    if (status !== 'Completed' && score !== undefined) {
+      throw new Error('Score only allowed when status is Completed');
+    }
+
+    return true;
+  }),
 ];
 
 // Query validation rules (stuff after ? in url)
