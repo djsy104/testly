@@ -13,7 +13,10 @@ const validateRequest = (req, res, next) => {
     }));
 
     return res.status(StatusCodes.BAD_REQUEST).json({
-      errors: formattedErrors,
+      errors: {
+        message: 'Validation failed!',
+        formattedErrors,
+      },
     });
   }
 
