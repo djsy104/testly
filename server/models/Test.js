@@ -4,7 +4,7 @@ const TestSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, 'Test name must be provided.'],
-      maxlength: 30,
+      maxlength: 100,
     },
 
     type: {
@@ -44,5 +44,8 @@ const TestSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Add text index on searchable fields
+TestSchema.index({ name: 'text' });
 
 module.exports = mongoose.model('Test', TestSchema);

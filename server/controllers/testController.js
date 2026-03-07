@@ -14,9 +14,57 @@ const pickAllowedFields = (source) => {
 };
 
 // Return all tests belonging to the authenticated user
-const getAllTests = async (req, res) => {
-  const tests = await Test.find({ createdBy: req.user.userId }).sort('-createdAt');
-  res.status(StatusCodes.OK).json({ tests, count: tests.length });
+const getAllTests = async (req, res, next) => {
+  try {
+    const filter = { createdBy: req.user.userId };
+
+    // Search filters
+    if (req.query.search) {
+      // $ -> MongoDB query operator
+      filter.$text = { $search: req.query.search };
+    }
+
+    // Other filters
+    if (req.query.status) filter.status = req.query.status;
+    if (req.query.type) filter.type = req.query.type;
+    if (req.query.isArchived !== undefined) filter.isArchived = req.query.isArchived;
+
+    // Applying pagination
+    const page = req.query.page ?? 1;
+    const limit = req.query.limit ?? 10;
+    const skip = (page - 1) * limit;
+
+    // Applying sorting
+    const sortString = req.query.sort ? req.query.sort.split(',').join(' ') : '-createdAt';
+
+    const total = await Test.countDocuments(filter); // Total number of results
+    const numberOfPages = Math.max(1, Math.ceil(total / limit));
+
+    // If current page is out of the range, return an empty page
+    if (page > numberOfPages) {
+      return res.status(StatusCodes.OK).json({
+        tests: [],
+        count: 0,
+        total,
+        page,
+        limit,
+        numberOfPages,
+      });
+    }
+
+    const tests = await Test.find(filter).sort(sortString).skip(skip).limit(limit);
+
+    res.status(StatusCodes.OK).json({
+      tests,
+      count: tests.length,
+      total,
+      page,
+      limit,
+      numberOfPages,
+    });
+  } catch (error) {
+    return next(error);
+  }
 };
 
 const getTest = async (req, res) => {
