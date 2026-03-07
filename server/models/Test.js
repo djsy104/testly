@@ -10,7 +10,8 @@ const TestSchema = new mongoose.Schema(
     type: {
       type: String,
       required: [true, 'Test type must be provided.'],
-      maxlength: 15,
+      enum: ['Quiz', 'Exam', 'Midterm', 'Final Exam', 'Other'],
+      default: 'Quiz',
     },
 
     status: {
@@ -26,10 +27,13 @@ const TestSchema = new mongoose.Schema(
 
     score: {
       type: Number,
+      min: [0, 'Score cannot be negative'],
+      max: [100, 'Score cannot exceed 100'],
     },
 
     isArchived: {
       type: Boolean,
+      default: false,
     },
 
     createdBy: {

@@ -1,9 +1,14 @@
-// const express = require('express');
-// const router = express.Router();
-// const { register, login, getUser } = require('../controllers/authController');
+const express = require('express');
+const router = express.Router();
+const {
+  getAllTests,
+  getTest,
+  createTest,
+  updateTest,
+  deleteTest,
+} = require('../controllers/tests');
 
-// router.get('/dashboard/:id', getUser);
-// router.post('/register', register);
-// router.post('/login', login);
+router.route('/').post(createTest).get(getAllTests);
+router.route('/:id').get(getTest).patch(updateTest).delete(deleteTest);
 
-// module.exports = router;
+module.exports = router;

@@ -8,7 +8,10 @@ const registerValidation = [
     .notEmpty()
     .withMessage('Name is required')
     .bail()
-    .isLength({ min: 1, max: 30 })
+    .isString()
+    .withMessage('Must provide valid string')
+    .bail()
+    .isLength({ max: 30 })
     .withMessage('Name must be at least 1 character and less than 30 characters'),
 
   body('email')
@@ -34,8 +37,7 @@ const registerValidation = [
     .withMessage('Password is required')
     .bail()
     .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters')
-    .bail(),
+    .withMessage('Password must be at least 8 characters'),
 ];
 
 // Login validation rules
@@ -49,6 +51,7 @@ const loginValidation = [
     .bail()
     .trim()
     .toLowerCase(),
+
   body('password').notEmpty().withMessage('Password is required'),
 ];
 
