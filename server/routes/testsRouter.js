@@ -6,7 +6,7 @@ const {
   createTest,
   updateTest,
   deleteTest,
-} = require('../controllers/tests');
+} = require('../controllers/testController');
 const validateRequest = require('../middleware/validateRequest');
 const {
   testIdValidation,

@@ -1,7 +1,7 @@
 const { body, param, query } = require('express-validator');
 
 // Allowed enum types
-const TEST_TYPES = ['Quiz', 'Exam', 'Midterm', 'Final'];
+const TEST_TYPES = ['Quiz', 'Exam', 'Midterm', 'Final Exam'];
 const TEST_STATUSES = ['Upcoming', 'In Review', 'Completed'];
 
 // Validates the test ID to ensure its a valids MongoDB ObjectId
@@ -50,8 +50,8 @@ const createTestValidation = [
   body('isArchived')
     .optional()
     .isBoolean()
-    .toBoolean()
     .withMessage('isArchived must be a boolean')
+    .toBoolean()
     .bail(),
 
   // Prevent clients from setting ownership
@@ -126,8 +126,8 @@ const updateTestValidation = [
   body('isArchived')
     .optional()
     .isBoolean()
-    .toBoolean()
     .withMessage('isArchived must be a boolean')
+    .toBoolean()
     .bail(),
 
   // Prevent clients from setting ownership
