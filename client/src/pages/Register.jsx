@@ -3,6 +3,7 @@ import axios from 'axios';
 import RegisterForm from '../features/auth/RegisterForm';
 import AuthCard from '@/features/auth/AuthCard';
 import { Button } from '@/components/ui/Button';
+import { Link } from 'react-router-dom';
 
 function Register() {
   return (
@@ -10,7 +11,13 @@ function Register() {
       <AuthCard
         title="Create an account"
         description="Enter your info below to create your account."
-        action={<Button variant="link">Log in</Button>}
+        action={
+          <Button asChild variant="link">
+            <Link to="/login" className="text-base text-text-950">
+              Login
+            </Link>
+          </Button>
+        }
         footer={
           <>
             <Button type="submit" className="w-full" form="register-form">
