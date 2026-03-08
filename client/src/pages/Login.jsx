@@ -13,7 +13,9 @@ function Login() {
         description="Enter your credentials to login"
         action={
           <Button asChild variant="link">
-            <Link to="/register">Sign Up</Link>
+            <Link to="/register" className="text-base text-text-950">
+              Sign Up
+            </Link>
           </Button>
         }
         footer={
