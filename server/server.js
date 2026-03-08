@@ -8,6 +8,8 @@ const app = express();
 const port = process.env.PORT || 8080;
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
 app.set('trust proxy', 1);
 
@@ -44,6 +46,8 @@ const authenticateUser = require('./middleware/authentication');
 // Mounting Routes
 app.use('/api/auth', authRouter);
 app.use('/api/tests', authenticateUser, testsRouter);
+
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Error handling middleware
 const notFoundMiddleware = require('./middleware/notFound');
