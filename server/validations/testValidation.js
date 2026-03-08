@@ -3,6 +3,7 @@ const { body, param, query } = require('express-validator');
 // Allowed enum types
 const TEST_TYPES = ['Quiz', 'Exam', 'Midterm', 'Final Exam'];
 const TEST_STATUSES = ['Upcoming', 'In Review', 'Completed'];
+const TEST_SORT_FIELDS = ['type', 'status', 'score', 'date', 'createdAt', 'isArchived'];
 
 // Validates the test ID to ensure its a valids MongoDB ObjectId
 const testIdValidation = [param('id').isMongoId().withMessage('Invalid test id format').bail()];
@@ -51,8 +52,8 @@ const createTestValidation = [
     .optional()
     .isBoolean()
     .withMessage('isArchived must be a boolean')
-    .toBoolean()
-    .bail(),
+    .bail()
+    .toBoolean(),
 
   // Prevent clients from setting ownership
   body('createdBy')
@@ -127,8 +128,8 @@ const updateTestValidation = [
     .optional()
     .isBoolean()
     .withMessage('isArchived must be a boolean')
-    .toBoolean()
-    .bail(),
+    .bail()
+    .toBoolean(),
 
   // Prevent clients from setting ownership
   body('createdBy')
@@ -161,38 +162,59 @@ const updateTestValidation = [
 
 // Query validation rules (stuff after ? in url)
 const listTestsQueryValidation = [
+  query('search')
+    .optional()
+    .isString()
+    .withMessage('search must be a string')
+    .bail()
+    .isLength({ max: 100 })
+    .withMessage('search must be at most 100 characters'),
+
   query('status')
     .optional()
     .isIn(TEST_STATUSES)
-    .withMessage(`status must be one of: ${TEST_STATUSES.join(', ')}`)
+    .withMessage(`Test status must be one of: ${TEST_STATUSES.join(', ')}`)
     .bail(),
 
   query('type')
     .optional()
     .isIn(TEST_TYPES)
-    .withMessage(`type must be one of: ${TEST_TYPES.join(', ')}`)
+    .withMessage(`Test type must be one of: ${TEST_TYPES.join(', ')}`)
     .bail(),
 
   query('isArchived')
     .optional()
-    .isBoolean()
-    .withMessage('isArchived must be a boolean')
-    .bail()
-    .toBoolean(),
+    .isIn(['true', 'false'])
+    .withMessage('isArchived must be a boolean string: true or false')
+    .bail(),
 
   query('page')
     .optional()
     .isInt({ min: 1, max: 1000 })
-    .withMessage('page must be an integer >= 1')
-    .bail()
-    .toInt(),
+    .withMessage('Page must be an integer >= 1')
+    .bail(),
 
   query('limit')
     .optional()
     .isInt({ min: 1, max: 100 })
-    .withMessage('limit must be an integer between 1 and 100')
+    .withMessage('Limit must be an integer between 1 and 100')
+    .bail(),
+
+  query('sort')
+    .optional()
+    .isString()
+    .withMessage('Sort must be a valid string')
     .bail()
-    .toInt(),
+    .custom((value) => {
+      const fields = value.split(',');
+      for (let field of fields) {
+        const baseField = field.startsWith('-') ? field.substring(1) : field;
+        if (!TEST_SORT_FIELDS.includes(baseField)) {
+          throw new Error(`Invalid sort field. Allowed fields: ${TEST_SORT_FIELDS.join(', ')}`);
+        }
+      }
+      return true;
+    }),
 ];
 
 module.exports = {
