@@ -4,7 +4,7 @@ import RegisterForm from '../features/auth/RegisterForm';
 import AuthCard from '@/features/auth/AuthCard';
 import { Button } from '@/components/ui/Button';
 
-function App() {
+function Register() {
   return (
     <div className="min-h-screen grid place-items-center bg-background p-6">
       <AuthCard
@@ -16,9 +16,6 @@ function App() {
             <Button type="submit" className="w-full" form="register-form">
               Create account
             </Button>
-            <Button variant="outline" className="w-full">
-              Continue with Google
-            </Button>
           </>
         }
       >
@@ -28,4 +25,4 @@ function App() {
   );
 }
 
-export default App;
+export default Register;

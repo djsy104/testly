@@ -7,10 +7,6 @@ import {
   CardContent,
   CardFooter,
 } from '../../components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Label } from '@/components/ui/Label';
-import { Input } from '@/components/ui/Input';
-import PasswordRequirements from './PasswordRequirements';
 
 function AuthCard({ title, description, action, children, footer, className = '' }) {
   return (
