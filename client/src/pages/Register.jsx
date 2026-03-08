@@ -13,7 +13,9 @@ function Register() {
         description="Enter your info below to create your account."
         action={
           <Button asChild variant="link">
-            <Link to="/login">Login</Link>
+            <Link to="/login" className="text-base text-text-950">
+              Login
+            </Link>
           </Button>
         }
         footer={
