@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AuthContext } from './auth-context';
-import { login as loginReq, register as registerReq, me as meReq } from '@/features/auth/auth.api';
+import { AuthContext } from './AuthContext';
+import { login as loginReq, register as registerReq, me as meReq } from '@/features/auth/authApi';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
