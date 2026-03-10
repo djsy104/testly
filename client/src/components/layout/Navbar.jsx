@@ -1,8 +1,11 @@
 import { NavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/context/useAuth';
 import SunIcon from '@/assets/light-mode.svg?react';
 
 function Navbar() {
+  const { logout } = useAuth();
+
   return (
     <nav className="w-full bg-primary text-primary-foreground border-b border-border">
       <div className="flex h-16 items-center justify-between px-6">
@@ -19,7 +22,10 @@ function Navbar() {
             <SunIcon className="h-8 w-8 text-primary-foreground" />
           </Button>
 
-          <Button className="text-lg font-medium hover:opacity-80 transition-opacity">
+          <Button
+            className="text-lg font-medium hover:opacity-80 transition-opacity"
+            onClick={logout}
+          >
             Log out
           </Button>
         </div>
