@@ -16,19 +16,15 @@ const router = createBrowserRouter([
 
   {
     path: '/register',
-    element: <Register />,
+    element: <AppShell />,
+    children: [{ index: true, element: <Register /> }],
     errorElement: <ErrorPage />,
   },
 
   {
     path: '/login',
-    element: <Login />,
-    errorElement: <ErrorPage />,
-  },
-
-  {
-    path: '/dashboard',
-    element: <Register />,
+    element: <AppShell />,
+    children: [{ index: true, element: <Login /> }],
     errorElement: <ErrorPage />,
   },
 ]);
