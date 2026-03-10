@@ -1,0 +1,63 @@
+import { useEffect, useMemo, useState } from 'react';
+import { AuthContext } from './AuthContext';
+import { login as loginReq, register as registerReq, me as meReq } from '@/features/auth/authApi';
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [isBooting, setIsBooting] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      setIsBooting(false);
+      return;
+    }
+
+    (async () => {
+      try {
+        const data = await meReq();
+        setUser(data.user);
+      } catch {
+        localStorage.removeItem('token');
+        setUser(null);
+      } finally {
+        setIsBooting(false);
+      }
+    })();
+  }, []);
+
+  async function login(email, password) {
+    const data = await loginReq({ email, password });
+    localStorage.setItem('token', data.token);
+    const meData = await meReq();
+    setUser(meData.user);
+    return data;
+  }
+
+  async function register(name, email, password) {
+    const data = await registerReq({ name, email, password });
+    localStorage.setItem('token', data.token);
+    const meData = await meReq();
+    setUser(meData.user);
+    return data;
+  }
+
+  function logout() {
+    localStorage.removeItem('token');
+    setUser(null);
+  }
+
+  const value = useMemo(
+    () => ({
+      user,
+      isAuthenticated: !!user,
+      isBooting,
+      login,
+      register,
+      logout,
+    }),
+    [user, isBooting]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
