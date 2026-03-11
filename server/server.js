@@ -29,7 +29,7 @@ app.use('/api/auth', authLimiter);
 
 // For front-end hosts
 const corsOptions = {
-  origin: ['http://127.0.0.1:5173', 'http://localhost:5173'],
+  origin: ['http://127.0.0.1:5173', 'http://localhost:5173', 'https://testly-react.onrender.com'],
 };
 app.use(cors(corsOptions));
 
