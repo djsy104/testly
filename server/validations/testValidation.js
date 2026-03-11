@@ -8,6 +8,28 @@ const TEST_SORT_FIELDS = ['type', 'status', 'score', 'date', 'createdAt', 'isArc
 // Validates the test ID to ensure its a valids MongoDB ObjectId
 const testIdValidation = [param('id').isMongoId().withMessage('Invalid test id format').bail()];
 
+const normalizeUpcomingPastDateToInReview = (req) => {
+  const hasDate = req.body.date !== undefined && req.body.date !== null;
+  if (!hasDate) return;
+
+  // Make sure it's a Date and handle if not
+  const dateValue = req.body.date instanceof Date ? req.body.date : new Date(req.body.date);
+  if (Number.isNaN(dateValue.getTime())) return;
+
+  const statusValue = req.body.status;
+
+  // Only normalize if status is Upcoming OR missing (create flow default could be Upcoming)
+  const isUpcoming =
+    statusValue === 'Upcoming' || (assumeUpcomingIfMissing && statusValue === undefined);
+
+  if (!isUpcoming) return;
+
+  const now = new Date();
+  if (dateValue < now) {
+    req.body.status = 'In Review';
+  }
+};
+
 // Create test validation rules
 const createTestValidation = [
   body('name')
@@ -61,6 +83,11 @@ const createTestValidation = [
     .custom(() => {
       throw new Error('createdBy cannot be set by the client');
     }),
+
+  body().custom((_, { req }) => {
+    normalizeUpcomingPastDateToInReview(req, { assumeUpcomingIfMissing: true });
+    return true;
+  }),
 
   // Ensures score MUST be set if status is 'Completed'
   body().custom((_, { req }) => {
@@ -137,6 +164,18 @@ const updateTestValidation = [
     .custom(() => {
       throw new Error('createdBy cannot be updated by the client');
     }),
+
+  // If payload includes BOTH date and status, normalize if date is past and status is Upcoming.
+  body().custom((_, { req }) => {
+    const hasStatus = req.body.status !== undefined;
+    const hasDate = req.body.date !== undefined;
+
+    if (hasStatus && hasDate) {
+      normalizeUpcomingPastDateToInReview(req);
+    }
+
+    return true;
+  }),
 
   // Ensures score MUST be set if status is 'Completed'
   body().custom((_, { req }) => {

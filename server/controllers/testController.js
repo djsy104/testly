@@ -13,6 +13,29 @@ const pickAllowedFields = (source) => {
   return picked;
 };
 
+const normalizeUpcomingPastDate = (effective) => {
+  const status = effective.status ?? 'Upcoming';
+  const date = effective.date;
+
+  if (!date) return;
+
+  const dateValue = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(dateValue.getTime())) return;
+
+  if (status === 'Upcoming' && dateValue < new Date()) {
+    effective.status = 'In Review';
+  }
+};
+
+const validateScoreOnlyWhenCompleted = (effective) => {
+  const status = effective.status ?? 'Upcoming';
+  const scoreProvided = effective.score !== undefined;
+
+  if (scoreProvided && status !== 'Completed') {
+    throw new BadRequestError('Score only allowed when status is Completed');
+  }
+};
+
 // Return all tests belonging to the authenticated user
 const getAllTests = async (req, res, next) => {
   try {
@@ -90,6 +113,11 @@ const createTest = async (req, res) => {
   // Only accept allowed fields from client for security
   const data = pickAllowedFields(req.body);
   data.createdBy = req.user.userId;
+
+  // Data normalization check
+  normalizeUpcomingPastDateToInReview(data);
+  validateScoreOnlyWhenCompleted(data);
+
   const test = await Test.create(data);
   res.status(StatusCodes.CREATED).json({ test });
 };
@@ -102,6 +130,50 @@ const updateTest = async (req, res) => {
 
   // Only update allowed fields
   const updates = pickAllowedFields(req.body);
+
+  // Find the existing test
+  const existing = await Test.findOne({
+    createdBy: userId,
+    _id: testId,
+  });
+
+  if (!existing) {
+    throw new NotFoundError(`Unable to find test with id ${testId}`);
+  }
+
+  // Build the "effective" final state after applying this patch
+  const effective = {
+    status: updates.status ?? existing.status,
+    date: updates.date ?? existing.date,
+    score,
+  };
+
+  /**
+   * Rule 1: Past Date + Upcoming => In Review
+   * If the effective status is Upcoming AND effective date is in the past,
+   * force status to In Review.
+   */
+  if (effective.status === 'Upcoming' && effective.date) {
+    const dateValue = effective.date instanceof Date ? effective.date : new Date(effective.date);
+    if (!Number.isNaN(dateValue.getTime()) && dateValue < new Date()) {
+      effective.status = 'In Review';
+    }
+  }
+
+  /**
+   * Rule 2: Score only allowed when Completed
+   * Score is optional for Completed, but forbidden otherwise.
+   */
+  const scoreProvided = updates.score !== undefined; // only validate score when client is trying to set it
+  if (scoreProvided && effective.status !== 'Completed') {
+    // Use whatever 400 error type you already have in ../errors
+    throw new BadRequestError('Score only allowed when status is Completed');
+  }
+
+  // If rule 1 normalized the status, persist it in the update
+  if (effective.status !== (updates.status ?? existing.status)) {
+    updates.status = effective.status;
+  }
 
   const test = await Test.findOneAndUpdate(
     {
