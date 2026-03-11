@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Label } from '@/components/ui/Label';
+import { toast } from 'react-toastify';
 
 const TEST_TYPES = ['Quiz', 'Exam', 'Midterm', 'Final Exam'];
 const TEST_STATUSES = ['Upcoming', 'In Review', 'Completed'];
@@ -17,28 +18,39 @@ function buildInitialForm(initialData) {
   };
 }
 
+// AI helped with stylzing the forms
 function TestDetails({ initialData, onSubmit, submitting = false }) {
   const [form, setForm] = useState(() => buildInitialForm(initialData));
-  const [error, setError] = useState('');
 
   function setField(name, value) {
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      // If status changes away from Completed, clear score immediately
+      if (name === 'status' && value !== 'Completed' && prev.score !== '') {
+        return { ...prev, status: value, score: '' };
+      }
+
+      return { ...prev, [name]: value };
+    });
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError('');
 
+    // Client-side checks
     if (!TEST_TYPES.includes(form.type)) {
-      setError('Type must be one of: Quiz, Exam, Midterm, Final Exam.');
+      toast.error('Type must be one of: Quiz, Exam, Midterm, Final Exam.');
       return;
     }
     if (!TEST_STATUSES.includes(form.status)) {
-      setError('Status must be one of: Upcoming, In Review, Completed.');
+      toast.error('Status must be one of: Upcoming, In Review, Completed.');
       return;
     }
     if (form.score !== '' && Number(form.score) < 0) {
-      setError('Score cannot be negative.');
+      toast.error('Score cannot be negative.');
+      return;
+    }
+    if (form.status !== 'Completed' && form.score !== '') {
+      toast.error('Score can only be set when status is Completed.');
       return;
     }
 
@@ -51,18 +63,10 @@ function TestDetails({ initialData, onSubmit, submitting = false }) {
       ...(form.score === '' ? {} : { score: Number(form.score) }),
     };
 
-    try {
-      await onSubmit(payload);
-    } catch (err) {
-      const msg =
-        err?.response?.data?.msg ||
-        err?.response?.data?.message ||
-        (Array.isArray(err?.response?.data?.errors)
-          ? err.response.data.errors.map((e) => e.msg).join(', ')
-          : 'Request failed.');
-      setError(msg);
-    }
+    await onSubmit(payload);
   }
+
+  const scoreEnabled = form.status === 'Completed';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -127,17 +131,23 @@ function TestDetails({ initialData, onSubmit, submitting = false }) {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="score">Score (optional)</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="score">Score (optional)</Label>
+          {!scoreEnabled ? (
+            <span className="text-xs text-muted-foreground">Only for Completed tests</span>
+          ) : null}
+        </div>
+
         <Input
           id="score"
           type="number"
           className="h-10"
-          value={form.score}
+          value={scoreEnabled ? form.score : ''}
           onChange={(e) => setField('score', e.target.value)}
           min={0}
           step={1}
           placeholder="95"
-          disabled={submitting}
+          disabled={submitting || !scoreEnabled}
         />
       </div>
 
@@ -151,12 +161,6 @@ function TestDetails({ initialData, onSubmit, submitting = false }) {
         />
         <Label htmlFor="isArchived">Archived</Label>
       </div>
-
-      {error ? (
-        <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      ) : null}
 
       <Button type="submit" disabled={submitting}>
         {submitting ? 'Saving…' : 'Save'}

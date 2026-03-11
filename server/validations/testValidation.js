@@ -8,7 +8,7 @@ const TEST_SORT_FIELDS = ['type', 'status', 'score', 'date', 'createdAt', 'isArc
 // Validates the test ID to ensure its a valids MongoDB ObjectId
 const testIdValidation = [param('id').isMongoId().withMessage('Invalid test id format').bail()];
 
-const normalizeUpcomingPastDateToInReview = (req) => {
+const normalizeUpcomingPastDateToInReview = (req, { assumeUpcomingIfMissing = false } = {}) => {
   const hasDate = req.body.date !== undefined && req.body.date !== null;
   if (!hasDate) return;
 
@@ -18,7 +18,7 @@ const normalizeUpcomingPastDateToInReview = (req) => {
 
   const statusValue = req.body.status;
 
-  // Only normalize if status is Upcoming OR missing (create flow default could be Upcoming)
+  // Only normalize if status is Upcoming OR missing (create flow default is Upcoming)
   const isUpcoming =
     statusValue === 'Upcoming' || (assumeUpcomingIfMissing && statusValue === undefined);
 
@@ -89,15 +89,10 @@ const createTestValidation = [
     return true;
   }),
 
-  // Ensures score MUST be set if status is 'Completed'
   body().custom((_, { req }) => {
     const { status, score } = req.body;
 
-    if (status === 'Completed' && score === undefined) {
-      throw new Error('Score required when status is Completed');
-    }
-
-    if (status !== 'Completed' && score !== undefined) {
+    if (score !== undefined && status !== 'Completed') {
       throw new Error('Score only allowed when status is Completed');
     }
 
@@ -177,21 +172,13 @@ const updateTestValidation = [
     return true;
   }),
 
-  // Ensures score MUST be set if status is 'Completed'
   body().custom((_, { req }) => {
-    const hasStatus = req.body.status !== undefined;
     const hasScore = req.body.score !== undefined;
+    const hasStatus = req.body.status !== undefined;
 
-    // If neither field is being updated, skip
-    if (!hasStatus && !hasScore) return true;
+    if (!hasScore) return true;
 
-    const { status, score } = req.body;
-
-    if (status === 'Completed' && score === undefined) {
-      throw new Error('Score required when status is Completed');
-    }
-
-    if (status !== 'Completed' && score !== undefined) {
+    if (hasStatus && req.body.status !== 'Completed') {
       throw new Error('Score only allowed when status is Completed');
     }
 
