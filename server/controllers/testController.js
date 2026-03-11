@@ -1,6 +1,6 @@
 const Test = require('../models/Test');
 const { StatusCodes } = require('http-status-codes');
-const { NotFoundError } = require('../errors');
+const { NotFoundError, BadRequestError } = require('../errors');
 
 const ALLOWED_TEST_FIELDS = ['name', 'type', 'status', 'date', 'score', 'isArchived'];
 
@@ -22,7 +22,16 @@ const normalizeUpcomingPastDate = (effective) => {
   const dateValue = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(dateValue.getTime())) return;
 
-  if (status === 'Upcoming' && dateValue < new Date()) {
+  if (status !== 'Upcoming') return;
+
+  // Compare by day (UTC) to avoid timezone inconsistencies
+  const todayUTC = new Date();
+  todayUTC.setUTCHours(0, 0, 0, 0);
+
+  const testUTC = new Date(dateValue);
+  testUTC.setUTCHours(0, 0, 0, 0);
+
+  if (testUTC < todayUTC) {
     effective.status = 'In Review';
   }
 };
@@ -44,7 +53,6 @@ const getAllTests = async (req, res, next) => {
 
     // Search filters
     if (search) {
-      // $ -> MongoDB query operator
       filter.$text = { $search: search };
     }
 
@@ -61,7 +69,7 @@ const getAllTests = async (req, res, next) => {
     // Applying sorting
     const sortString = req.query.sort ? req.query.sort.split(',').join(' ') : '-createdAt';
 
-    const total = await Test.countDocuments(filter); // Total number of results
+    const total = await Test.countDocuments(filter);
     const numberOfPages = Math.max(1, Math.ceil(total / limit));
 
     // If current page is out of the range, return an empty page
@@ -114,9 +122,20 @@ const createTest = async (req, res) => {
   const data = pickAllowedFields(req.body);
   data.createdBy = req.user.userId;
 
-  // Data normalization check
-  normalizeUpcomingPastDateToInReview(data);
-  validateScoreOnlyWhenCompleted(data);
+  const effective = {
+    status: data.status,
+    date: data.date,
+    score: data.score,
+  };
+
+  // Backend enforced rules
+  normalizeUpcomingPastDate(effective);
+  validateScoreOnlyWhenCompleted(effective);
+
+  // Save the updated status if modified
+  if (effective.status !== (data.status ?? 'Upcoming')) {
+    data.status = effective.status;
+  }
 
   const test = await Test.create(data);
   res.status(StatusCodes.CREATED).json({ test });
@@ -141,36 +160,22 @@ const updateTest = async (req, res) => {
     throw new NotFoundError(`Unable to find test with id ${testId}`);
   }
 
-  // Build the "effective" final state after applying this patch
+  // Build the WIP final state after applying this patch
   const effective = {
     status: updates.status ?? existing.status,
     date: updates.date ?? existing.date,
-    score,
+    score: updates.score ?? existing.score,
   };
 
-  /**
-   * Rule 1: Past Date + Upcoming => In Review
-   * If the effective status is Upcoming AND effective date is in the past,
-   * force status to In Review.
-   */
-  if (effective.status === 'Upcoming' && effective.date) {
-    const dateValue = effective.date instanceof Date ? effective.date : new Date(effective.date);
-    if (!Number.isNaN(dateValue.getTime()) && dateValue < new Date()) {
-      effective.status = 'In Review';
-    }
+  // Backend enforced rules (update)
+  normalizeUpcomingPastDate(effective);
+
+  // Only validate score gating when client is trying to set score
+  if (updates.score !== undefined) {
+    validateScoreOnlyWhenCompleted({ status: effective.status, score: updates.score });
   }
 
-  /**
-   * Rule 2: Score only allowed when Completed
-   * Score is optional for Completed, but forbidden otherwise.
-   */
-  const scoreProvided = updates.score !== undefined; // only validate score when client is trying to set it
-  if (scoreProvided && effective.status !== 'Completed') {
-    // Use whatever 400 error type you already have in ../errors
-    throw new BadRequestError('Score only allowed when status is Completed');
-  }
-
-  // If rule 1 normalized the status, persist it in the update
+  // If normalization changed status, persist it in the update
   if (effective.status !== (updates.status ?? existing.status)) {
     updates.status = effective.status;
   }
@@ -181,12 +186,8 @@ const updateTest = async (req, res) => {
       _id: testId,
     },
     updates,
-    { new: true, runValidators: true }
+    { returnDocument: 'after', runValidators: true }
   );
-
-  if (!test) {
-    throw new NotFoundError(`Unable to find test with id ${testId}`);
-  }
 
   res.status(StatusCodes.OK).json({ test });
 };

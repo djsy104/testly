@@ -14,13 +14,13 @@ function Navbar() {
         </NavLink>
 
         <div className="ml-auto flex items-center gap-4">
-          <Button
+          {/* <Button
             variant="ghost"
             size="icon"
             className="text-primary-foreground hover:opacity-80 transition-opacity"
           >
             <SunIcon className="h-8 w-8 text-primary-foreground" />
-          </Button>
+          </Button> */}
 
           <Button
             className="text-lg font-medium hover:opacity-80 transition-opacity"
