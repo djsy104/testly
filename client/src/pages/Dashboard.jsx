@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-// AI helped with giving me a template for me to modify according to my needs
 function Dashboard() {
   const { tests, loading, meta, loadTests, createTest, updateTest, deleteTest } = useTests();
   const [showCreate, setShowCreate] = useState(false);
